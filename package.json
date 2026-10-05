@@ -1,0 +1,14 @@
+{
+  "name": "berkshire-value-dashboard",
+  "version": "0.2.1",
+  "private": true,
+  "description": "Berkshire-inspired long-term value research dashboard",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "check": "node scripts/check.mjs",
+    "dev": "node scripts/serve.mjs"
+  }
+}

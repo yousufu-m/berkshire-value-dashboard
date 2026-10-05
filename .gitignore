@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+coverage/
+test-results/
+playwright-report/
+private/
+backups/
+exports/
+*价值投资看板*.json
+*价值投资研究池*.csv
