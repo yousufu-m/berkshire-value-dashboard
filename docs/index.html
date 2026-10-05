@@ -1,0 +1,751 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#0b1320" />
+    <meta
+      name="description"
+      content="长期价值投资研究看板：重点关注、来源核验、估值假设和季度复盘。"
+    />
+    <title>伯克希尔式“十五五”长期价值投资看板</title>
+    <link rel="stylesheet" href="./assets/styles.css" />
+  </head>
+  <body>
+    <noscript
+      ><p style="padding: 20px; color: #fff; background: #552d24">
+        此看板需要 JavaScript 才能交互。请在 Safari
+        或其他完整浏览器中打开已发布的网页网址。
+      </p></noscript
+    >
+    <div class="app">
+      <header class="header">
+        <div class="title">
+          <div class="eyebrow">LONG-TERM VALUE RESEARCH · V0.2</div>
+          <h1>伯克希尔式“十五五”长期价值投资看板</h1>
+          <p>
+            政策只决定研究方向；护城河、资本回报、自由现金流、资本配置与买入价格决定是否长期持有。评分用于研究排序，不构成投资建议。
+          </p>
+        </div>
+        <div class="badge">v0.2 · 手动研究与定期复盘</div>
+      </header>
+
+      <div class="notice">
+        旧版附带的行情、估值倍数及研究评分尚未逐项核验。原文件标注采集日为
+        2026-10-04，但没有实际交易日期与来源链接；请先在公司详情补齐证据。本站不自动刷新行情。
+      </div>
+      <div id="saveStatus" role="status" aria-live="polite"></div>
+      <nav class="tabs" aria-label="看板页面">
+        <button class="tab active" data-tab="overview">总览</button>
+        <button class="tab" data-tab="explorer">公司筛选</button>
+        <button class="tab" data-tab="scoring">评分模型</button>
+        <button class="tab" data-tab="valuation">估值工作台</button>
+        <button class="tab" data-tab="reviews">季度复盘</button>
+        <button class="tab" data-tab="data">数据管理</button>
+      </nav>
+
+      <section id="overview" class="panel active">
+        <div id="kpis" class="grid kpis"></div>
+        <div class="section-title">
+          <h2>本次打开，先看这三件事</h2>
+          <div class="hint">提醒在打开页面时计算，不发送后台通知</div>
+        </div>
+        <div id="researchQueue" class="queue"></div>
+        <div class="section-title">
+          <h2>八条长期研究主线</h2>
+          <div class="hint">点击卡片可直接筛选该主题</div>
+        </div>
+        <div id="themeGrid" class="grid theme-grid"></div>
+        <div class="section-title">
+          <h2>研究排序 · 主观初筛</h2>
+          <div class="hint">按当前模型评分排序；高分 ≠ 当前应买入</div>
+        </div>
+        <div id="topList" class="hero-list"></div>
+      </section>
+
+      <section id="explorer" class="panel">
+        <div class="controls">
+          <div class="control">
+            <label for="search">搜索公司 / Ticker</label
+            ><input
+              id="search"
+              class="input"
+              placeholder="例如：腾讯 / 700.HK"
+            />
+          </div>
+          <div class="control">
+            <label for="themeFilter">主题</label
+            ><select id="themeFilter" class="select">
+              <option value="">全部</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="roleFilter">研究角色</label
+            ><select id="roleFilter" class="select">
+              <option value="">全部</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="minScore">最低评分</label
+            ><input
+              id="minScore"
+              class="input"
+              type="number"
+              min="0"
+              max="100"
+              value="0"
+            />
+          </div>
+          <div class="control">
+            <label for="maxPE">最高 PE</label
+            ><input
+              id="maxPE"
+              class="input"
+              type="number"
+              min="0"
+              step="1"
+              placeholder="不限"
+            />
+          </div>
+          <div class="control">
+            <label>&nbsp;</label
+            ><button id="resetFilters" class="btn">重置筛选</button>
+          </div>
+        </div>
+        <div class="actions" style="margin-bottom: 12px">
+          <label class="inline-check"
+            ><input id="watchOnly" type="checkbox" />只看重点关注</label
+          >
+          <label class="inline-check"
+            ><input id="unverifiedOnly" type="checkbox" />只看待核验</label
+          >
+          <span id="filterCount" class="muted-line"></span>
+        </div>
+        <div class="table-wrap">
+          <table id="companyTable">
+            <thead>
+              <tr>
+                <th>关注</th>
+                <th data-sort="name">公司</th>
+                <th data-sort="ticker">Ticker</th>
+                <th data-sort="theme">主题</th>
+                <th data-sort="role">研究角色</th>
+                <th data-sort="score">研究评分</th>
+                <th data-sort="pe">PE</th>
+                <th data-sort="pb">PB</th>
+                <th data-sort="div">股息率</th>
+                <th data-sort="mcap">市值(亿)</th>
+                <th>核验 / 日期</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="scoring" class="panel">
+        <div class="grid two-col">
+          <div class="card">
+            <div class="section-title" style="margin-top: 0">
+              <h2>正向评分权重</h2>
+              <div id="weightTotal" class="hint"></div>
+            </div>
+            <div id="weights" class="weights"></div>
+            <div class="section-title"><h2>风险扣分</h2></div>
+            <div class="grid two-col">
+              <div class="weight-row">
+                <div class="top">
+                  <span>周期性风险扣分系数</span><b id="cycPenaltyLabel"></b>
+                </div>
+                <input
+                  id="cycPenalty"
+                  type="range"
+                  min="0"
+                  max="3"
+                  step="0.25"
+                />
+              </div>
+              <div class="weight-row">
+                <div class="top">
+                  <span>政策依赖风险扣分系数</span
+                  ><b id="policyPenaltyLabel"></b>
+                </div>
+                <input
+                  id="policyPenalty"
+                  type="range"
+                  min="0"
+                  max="3"
+                  step="0.25"
+                />
+              </div>
+            </div>
+            <div class="flex wrap" style="margin-top: 14px">
+              <button id="resetWeights" class="btn">恢复默认权重</button>
+              <button id="saveWeights" class="btn primary">保存到本机</button>
+            </div>
+          </div>
+          <div class="card">
+            <h2 style="font-size: 17px; margin-top: 0">评分原则</h2>
+            <div class="note">
+              <b>这是自定义研究模型，并非伯克希尔官方评分体系。</b>
+              初始分数和投资逻辑是待验证的研究假设；各公司分数可在详情编辑。PE/PB/股息率规则只做粗筛，不能跨行业直接判断便宜。<br /><br /><b
+                >政策因素只有小权重。</b
+              >
+              先判断生意本身是否值得拥有，再判断价格。技术迭代快、盈利可预测性低的公司，即使政策空间巨大，也可能只能进入观察池。<br /><br />
+              A：≥80，优先做年报级研究；B：70–79.9，重点观察；C：60–69.9，跟踪/等价格；D：＜60，暂缓。<br /><br />
+              评分中的“能力圈、护城河、管理层”等包含主观判断，必须随着新证据更新，不能伪装成客观事实。
+            </div>
+            <div class="section-title"><h2>实时排名</h2></div>
+            <div id="rankPreview"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="valuation" class="panel">
+        <div class="card">
+          <div class="controls" style="grid-template-columns: 2fr 1fr 1fr 1fr">
+            <div class="control">
+              <label for="valCompany">公司</label
+              ><select id="valCompany" class="select"></select>
+            </div>
+            <div class="control">
+              <label for="ownerEarnings">标准化 Owner Earnings（亿元）</label
+              ><input
+                id="ownerEarnings"
+                class="input"
+                type="number"
+                step="0.1"
+                placeholder="手工输入"
+              />
+            </div>
+            <div class="control">
+              <label for="requiredYield">要求 OE 收益率</label
+              ><input
+                id="requiredYield"
+                class="input"
+                type="number"
+                step="0.1"
+                value="7.5"
+              />%
+            </div>
+            <div class="control">
+              <label for="currentMcap">参考市值（亿；原币种）</label
+              ><input id="currentMcap" class="input" disabled />
+            </div>
+          </div>
+          <div id="valDataStatus" class="note"></div>
+          <div class="form-grid" style="margin-top: 12px">
+            <div class="control">
+              <label for="oeCurrency">OE 币种</label
+              ><select id="oeCurrency" class="select">
+                <option>CNY</option>
+                <option>HKD</option>
+                <option>USD</option>
+              </select>
+            </div>
+            <div class="control">
+              <label for="fxRate">1 单位 OE 币种 = 多少市值币种</label
+              ><input
+                id="fxRate"
+                class="input"
+                type="number"
+                min="0.000001"
+                step="any"
+                placeholder="币种不同请填汇率"
+              />
+            </div>
+            <div class="control">
+              <label for="targetMos">希望保留的安全边际（%）</label
+              ><input
+                id="targetMos"
+                class="input"
+                type="number"
+                min="0"
+                max="90"
+                value="30"
+              />
+            </div>
+            <div class="control">
+              <label for="valDate">假设制定日期</label
+              ><input id="valDate" class="input" type="date" />
+            </div>
+            <div class="control span-2">
+              <label for="valEvidence"
+                >OE 标准化依据 / 再投资需求 / 汇率依据</label
+              ><textarea
+                id="valEvidence"
+                class="textarea"
+                placeholder="写清利润调整、维持性资本开支、营运资金、支撑增长所需的再投资，以及汇率日期和来源。"
+              ></textarea>
+            </div>
+            <label class="inline-check span-2"
+              ><input id="scopeConfirmed" type="checkbox" />已核对：OE
+              为与该市值覆盖的全部普通股相对应的税后股东现金流，并已考虑支持增长的再投资。</label
+            >
+          </div>
+          <div class="section-title">
+            <h2>两阶段 10 年 DCF</h2>
+            <div class="hint">建议使用保守的、可解释的假设</div>
+          </div>
+          <div class="val-grid">
+            <div class="control">
+              <label for="g1">1–5 年 OE 增速</label
+              ><input
+                id="g1"
+                class="input"
+                type="number"
+                step="0.1"
+                value="8"
+              />%
+            </div>
+            <div class="control">
+              <label for="g2">6–10 年 OE 增速</label
+              ><input
+                id="g2"
+                class="input"
+                type="number"
+                step="0.1"
+                value="5"
+              />%
+            </div>
+            <div class="control">
+              <label for="gt">终值增速</label
+              ><input
+                id="gt"
+                class="input"
+                type="number"
+                step="0.1"
+                value="3"
+              />%
+            </div>
+            <div class="control">
+              <label for="disc">折现率</label
+              ><input
+                id="disc"
+                class="input"
+                type="number"
+                step="0.1"
+                value="10"
+              />%
+            </div>
+          </div>
+          <div
+            id="valError"
+            class="danger"
+            style="margin-top: 10px; font-size: 12px"
+          ></div>
+          <div class="section-title"><h2>估值结果</h2></div>
+          <div class="grid three-col">
+            <div class="val-output">
+              <span>OE 收益率法合理市值</span><b id="yieldFair">N/A</b
+              ><span id="yieldMOS"></span>
+            </div>
+            <div class="val-output">
+              <span>10 年 DCF 内在价值</span><b id="dcfFair">N/A</b
+              ><span id="dcfMOS"></span>
+            </div>
+            <div class="val-output">
+              <span>较低模型值下的折价</span><b id="valuationLabel">待输入</b
+              ><span>取两模型较低值；不代表真实价值下限</span>
+            </div>
+          </div>
+          <div id="valDetails" class="value-note muted"></div>
+          <div class="section-title">
+            <h2>假设敏感性 · DCF</h2>
+            <span class="hint"
+              >行：折现率；列：永续增速。格内为内在价值（亿，OE 币种）</span
+            >
+          </div>
+          <div id="sensitivity" class="table-wrap compact matrix"></div>
+          <details class="note method" style="margin-top: 14px">
+            <summary>如何使用 Owner Earnings 与安全边际</summary>
+            <p>
+              Owner
+              Earnings（所有者收益）从利润出发，加回适当的非现金费用，再减去维持竞争地位与业务量所需的资本开支和营运资金增量。维持性支出依赖估算，FCF（经营现金流减总资本开支）不能机械地当作
+              OE。
+            </p>
+            <p>
+              本工具按股东现金流估算股权价值，折现率为股东要求回报率；不再重复减债务。增长假设须扣除支持增长所需的再投资。本简化模型没有单独增加非经营性资产，也不适合直接用于银行或保险公司。
+            </p>
+            <p>
+              安全边际 = 1 − 市值 ÷
+              估值；它不是上涨空间，也不能保证避免亏损。两阶段
+              DCF、权重、敏感性区间和取两种估值较低者均为本看板的自定义研究规则。
+            </p>
+            <div class="link-list">
+              <a
+                href="https://www.berkshirehathaway.com/letters/1986.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                >1986 股东信：OE 原文</a
+              ><a
+                href="https://www.berkshirehathaway.com/letters/1992.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                >1992 股东信：安全边际</a
+              >
+            </div>
+          </details>
+          <div class="flex wrap" style="margin-top: 14px">
+            <button id="saveValuation" class="btn primary">
+              保存该公司假设</button
+            ><button id="clearValuation" class="btn">清空该公司假设</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="reviews" class="panel">
+        <div class="grid two-col">
+          <div class="card">
+            <h2 style="font-size: 17px; margin-top: 0">新增季度复盘</h2>
+            <div class="control">
+              <label for="reviewCompany">公司</label
+              ><select id="reviewCompany" class="select"></select>
+            </div>
+            <div class="grid two-col" style="margin-top: 10px">
+              <div class="control">
+                <label for="reviewDate">复盘日期</label
+                ><input id="reviewDate" class="input" type="date" />
+              </div>
+              <div class="control">
+                <label for="reviewStatus">投资逻辑状态</label
+                ><select id="reviewStatus" class="select">
+                  <option value="unchanged">⚪ 未改变</option>
+                  <option value="strengthened">🟢 增强</option>
+                  <option value="weakened">🟡 削弱</option>
+                  <option value="broken">🔴 失效</option>
+                </select>
+              </div>
+            </div>
+            <div class="control" style="margin-top: 10px">
+              <label for="reviewNote">本季度最重要的新证据 / Bear Case</label
+              ><textarea
+                id="reviewNote"
+                class="textarea"
+                placeholder="例如：ROIC 连续下降、竞争对手降价、管理层大额低回报并购……"
+              ></textarea>
+            </div>
+            <div class="form-grid" style="margin-top: 12px">
+              <div class="control">
+                <label for="reviewSource">证据来源链接（选填）</label
+                ><input
+                  id="reviewSource"
+                  class="input"
+                  type="url"
+                  placeholder="https://"
+                />
+              </div>
+              <div class="control">
+                <label for="nextReview">下次复盘日期（选填）</label
+                ><input id="nextReview" class="input" type="date" />
+              </div>
+              <div class="control span-2">
+                <label for="reviewInvalidation"
+                  >失效条件是否触发？下一步如何验证？</label
+                ><textarea id="reviewInvalidation" class="textarea"></textarea>
+              </div>
+            </div>
+            <details class="note method" style="margin-top: 12px">
+              <summary>附加财务观察（选填，保持同口径）</summary>
+              <div class="form-grid" style="margin-top: 12px">
+                <div class="control">
+                  <label for="finPeriod">报表期</label
+                  ><input
+                    id="finPeriod"
+                    class="input"
+                    placeholder="例如 2026 H1"
+                  />
+                </div>
+                <div class="control">
+                  <label for="finBasis">期间口径</label
+                  ><select id="finBasis" class="select">
+                    <option value="annual">全年</option>
+                    <option value="ytd">年初至今累计</option>
+                    <option value="quarter">单季</option>
+                    <option value="ttm">TTM</option>
+                  </select>
+                </div>
+                <div class="control">
+                  <label for="finCurrency">金额币种（单位：亿）</label
+                  ><select id="finCurrency" class="select">
+                    <option>CNY</option>
+                    <option>HKD</option>
+                    <option>USD</option>
+                  </select>
+                </div>
+                <div class="control">
+                  <label for="finROIC">ROIC（%，按来源口径）</label
+                  ><input id="finROIC" class="input" type="number" step="any" />
+                </div>
+                <div class="control">
+                  <label for="finROE">ROE（%，按来源口径）</label
+                  ><input id="finROE" class="input" type="number" step="any" />
+                </div>
+                <div class="control">
+                  <label for="finCFO">经营现金流（亿）</label
+                  ><input id="finCFO" class="input" type="number" step="any" />
+                </div>
+                <div class="control">
+                  <label for="finCapex">总资本开支（亿，支出填正数）</label
+                  ><input
+                    id="finCapex"
+                    class="input"
+                    type="number"
+                    min="0"
+                    step="any"
+                  />
+                </div>
+              </div>
+              <p class="muted-line">
+                FCF 自动按经营现金流 − 总资本开支计算；不同期间、币种和 ROIC/ROE
+                定义不能直接比较。请在复盘正文注明计算方法。
+              </p>
+            </details>
+            <button id="addReview" class="btn primary" style="margin-top: 10px">
+              保存复盘
+            </button>
+          </div>
+          <div class="card">
+            <div class="section-title" style="margin-top: 0">
+              <h2>历史记录</h2>
+              <div class="hint">保存在浏览器本地</div>
+            </div>
+            <div id="reviewList" class="review-list"></div>
+            <div class="section-title"><h2>财务观察记录</h2></div>
+            <div id="financialHistory" class="table-wrap compact"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="data" class="panel">
+        <div class="grid two-col">
+          <div class="card">
+            <h2 style="font-size: 17px; margin-top: 0">导出 / 导入</h2>
+            <p class="muted" style="font-size: 12px; line-height: 1.6">
+              JSON
+              包含公司数据、重点关注、来源、假设、复盘和财务观察。请定期备份；浏览器数据不自动跨设备同步。CSV
+              导出完整研究池。支持导入原版 JSON。
+            </p>
+            <div class="flex wrap">
+              <button id="exportJson" class="btn primary">导出 JSON</button>
+              <button id="exportCsv" class="btn">导出 CSV</button>
+              <label class="btn" style="cursor: pointer"
+                >导入 JSON<input
+                  id="importJson"
+                  type="file"
+                  accept=".json,application/json"
+                  hidden
+              /></label>
+              <button id="resetLocal" class="btn danger">重置本机数据</button>
+            </div>
+            <div id="importPreview" class="import-preview hidden"></div>
+          </div>
+          <div class="card">
+            <h2 style="font-size: 17px; margin-top: 0">数据说明与版本记录</h2>
+            <div class="note">
+              <b>旧版数据出处尚未闭环。</b> 原文件称其来自 Longbridge，采集日为
+              2026-10-04；缺少逐项链接、交易日期、PE/PB
+              口径及市值范围，因此本版保留数值并统一标记待核验。公司逻辑与评分同样是待研究假设。<br /><br />
+              可在公司详情编辑数字、币种、来源链接与核验状态。全公司 OE
+              必须对齐全公司普通股市值；A/H 多地上市时，不能拿 H
+              股流通市值去比较全集团 OE。<br /><br />
+              <b>v0.2 · 2026-10-04</b
+              >：增加重点关注、复盘队列、来源核验、失效条件、财务观察、DCF
+              敏感性；修复刷新丢失公司数据与无效输入残留估值。旧版自定义权重和记录在同一浏览器存储可访问时自动迁移。<br /><br />
+              <b>使用方式</b>：在 Safari
+              或其他完整浏览器中打开已发布的网页网址。若从附件版迁移，请先导出
+              JSON，再在网页的数据管理中导入。不同网址、浏览器或设备不会自动共享数据。尚无实时行情、后台提醒或云端同步。
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="footer">
+        研究用途，不构成投资建议。投资者应自行核验公司公告、交易所披露和最新估值；资源股、高成长科技股及政策敏感行业均可能发生大幅估值压缩或基本面恶化。
+      </div>
+    </div>
+
+    <div id="backdrop" class="drawer-backdrop"></div>
+    <aside
+      id="drawer"
+      class="drawer"
+      role="dialog"
+      aria-modal="true"
+      aria-label="公司详情"
+      tabindex="-1"
+    >
+      <div class="drawer-head">
+        <div>
+          <h2 id="dName"></h2>
+          <div id="dSub" class="muted" style="margin-top: 5px"></div>
+        </div>
+        <button id="closeDrawer" class="close">关闭</button>
+      </div>
+      <div class="actions" style="margin-top: 10px">
+        <button id="toggleWatch" class="btn">加入重点关注</button
+        ><button id="drawerVal" class="btn">进入估值</button
+        ><button id="drawerReview" class="btn">写复盘</button>
+      </div>
+      <div id="dMeta" class="note" style="margin-top: 12px"></div>
+      <div class="section-title"><h2>旧快照 / 手工核验数据</h2></div>
+      <div id="dKv" class="kv"></div>
+      <div class="section-title"><h2>投资逻辑</h2></div>
+      <div id="dThesis" class="note"></div>
+      <div class="section-title"><h2>Bear Case / 失效风险</h2></div>
+      <div id="dBear" class="note"></div>
+      <div class="section-title">
+        <h2>伯克希尔评分</h2>
+        <div id="dTotal"></div>
+      </div>
+      <div id="dScores" class="score-grid"></div>
+      <details open>
+        <summary>编辑研究卡</summary>
+        <div class="form-grid">
+          <div class="control span-2">
+            <label for="editThesis">投资逻辑（判断 / 假设）</label
+            ><textarea id="editThesis" class="textarea"></textarea>
+          </div>
+          <div class="control span-2">
+            <label for="editBear">Bear Case / 反方证据</label
+            ><textarea id="editBear" class="textarea"></textarea>
+          </div>
+          <div class="control span-2">
+            <label for="editFailure">什么事实会推翻长期持有逻辑？</label
+            ><textarea
+              id="editFailure"
+              class="textarea"
+              placeholder="写可观察的条件，而不只是股价下跌。例如：核心业务回报率持续低于资本成本，并且没有可信的修复路径。"
+            ></textarea>
+          </div>
+          <div class="control">
+            <label for="editNext">下次复盘</label
+            ><input id="editNext" class="input" type="date" />
+          </div>
+          <div class="control">
+            <label for="editStage">研究进度</label
+            ><select id="editStage" class="select">
+              <option value="idea">初筛</option>
+              <option value="reading">读年报 / 核验证据</option>
+              <option value="valuing">研究估值</option>
+              <option value="tracking">持续跟踪</option>
+              <option value="paused">暂缓</option>
+            </select>
+          </div>
+          <div class="control span-2">
+            <label for="editEvidence">研究证据与评分依据</label
+            ><textarea
+              id="editEvidence"
+              class="textarea"
+              placeholder="记录护城河、资本回报、管理层资本配置的证据。"
+            ></textarea>
+          </div>
+        </div>
+      </details>
+      <details>
+        <summary>编辑行情与数据口径</summary>
+        <div class="form-grid">
+          <div class="control">
+            <label for="editPrice">股价（报价币种）</label
+            ><input
+              id="editPrice"
+              class="input"
+              type="number"
+              min="0"
+              step="any"
+            />
+          </div>
+          <div class="control">
+            <label for="editQuoteCurrency">报价币种</label
+            ><select id="editQuoteCurrency" class="select">
+              <option value="">待核验</option>
+              <option>CNY</option>
+              <option>HKD</option>
+              <option>USD</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="editMcap">总市值（亿）</label
+            ><input
+              id="editMcap"
+              class="input"
+              type="number"
+              min="0"
+              step="any"
+            />
+          </div>
+          <div class="control">
+            <label for="editCurrency">市值币种</label
+            ><select id="editCurrency" class="select">
+              <option value="">待核验</option>
+              <option>CNY</option>
+              <option>HKD</option>
+              <option>USD</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="editPE">PE（倍，亏损可填负值）</label
+            ><input id="editPE" class="input" type="number" step="any" />
+          </div>
+          <div class="control">
+            <label for="editPB">PB（倍）</label
+            ><input id="editPB" class="input" type="number" step="any" />
+          </div>
+          <div class="control">
+            <label for="editDiv">股息率（%）</label
+            ><input
+              id="editDiv"
+              class="input"
+              type="number"
+              min="0"
+              step="any"
+            />
+          </div>
+          <div class="control">
+            <label for="editAsOf">实际交易 / 快照日期</label
+            ><input id="editAsOf" class="input" type="date" />
+          </div>
+          <div class="control span-2">
+            <label for="editSource">数据来源链接</label
+            ><input
+              id="editSource"
+              class="input"
+              type="url"
+              placeholder="https://"
+            />
+          </div>
+          <div class="control span-2">
+            <label for="editBasis"
+              >市值范围、PE/PB 期间、分红及不同字段日期</label
+            ><textarea
+              id="editBasis"
+              class="textarea"
+              placeholder="写明市值是否涵盖全部普通股；PE 为 TTM / 上年度 / 预测；股息是否含特别派息。"
+            ></textarea>
+          </div>
+          <div class="control">
+            <label for="editVerification">核验状态</label
+            ><select id="editVerification" class="select">
+              <option value="unverified">待核验</option>
+              <option value="verified">我已逐项核验</option>
+            </select>
+          </div>
+        </div>
+      </details>
+      <details>
+        <summary>编辑主观评分（1–5；风险项越高越不利）</summary>
+        <div id="scoreEditor" class="score-grid"></div>
+        <p class="muted-line">
+          估值粗筛由 PE/PB/股息率规则计算；不是独立的内在价值评估。
+        </p>
+      </details>
+      <div id="editError" class="danger" role="alert"></div>
+      <div class="actions" style="margin: 18px 0 30px">
+        <button id="saveCompany" class="btn primary">保存公司研究卡</button
+        ><button id="cancelCompany" class="btn">关闭</button>
+      </div>
+    </aside>
+
+    <script src="./assets/companies.js" defer></script>
+    <script src="./assets/app.js" defer></script>
+  </body>
+</html>
